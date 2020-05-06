@@ -1,0 +1,63 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  labels:
+    app: sport
+  name: sport
+  namespace: wishcloud
+spec:
+  replicas: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+  template:
+    metadata:
+      labels:
+        app: sport
+    spec:
+      volumes:
+        - name: filebeat-conf
+          hostPath:
+            path: /var/LogFiles/wishcloud
+            type: DirectoryOrCreate
+      containers:
+      - env:
+        - name: sport
+          value: Release
+        image: 10.10.100.4:8888/wishcloud/wishcloud-sportdemoapi-image:latest
+        imagePullPolicy: Always
+        name: sport
+        volumeMounts:
+        - mountPath: "/app/LogFiles/"
+          name: "filebeat-conf"
+        ports:
+        - containerPort: 80   
+        resources:
+          limits:
+            cpu: 150m
+            memory: 300Mi
+          requests:
+            cpu: 150m
+            memory: 300Mi            
+      nodeSelector:   
+        nodeno: "node2" 
+      imagePullSecrets:
+      - name: regcred
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: sport
+  name: sport
+  namespace: wishcloud
+spec:
+  type: ClusterIP
+  ports:
+  - targetPort: 80
+    port: 8003
+    protocol: TCP
+  selector:
+    app: sport
